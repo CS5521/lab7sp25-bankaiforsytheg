@@ -3,6 +3,7 @@
 #include "fcntl.h"
 #include "user.h"
 #include "x86.h"
+#include "pstat.h"
 
 char*
 strcpy(char *s, const char *t)
@@ -103,4 +104,9 @@ memmove(void *vdst, const void *vsrc, int n)
   while(n-- > 0)
     *dst++ = *src++;
   return vdst;
+}
+
+void ps(void) {
+  pstatTable pstat;
+  getpinfo(&pstat);
 }

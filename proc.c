@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -142,6 +143,9 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  p->ticks = 0;
+  p->tickets = 10;
+
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
   // writes to be visible, and the lock is also needed
@@ -184,9 +188,12 @@ fork(void)
   struct proc *np;
   struct proc *curproc = myproc();
 
-  // Allocate process.
+  // Allocate process.s
   if((np = allocproc()) == 0){
     return -1;
+
+  np->ticks = 0;
+  np->tickets = (curproc->tickets > 10) ? curproc->tickets : 10;
   }
 
   // Copy process state from proc.
@@ -530,5 +537,32 @@ procdump(void)
         cprintf(" %p", pc[i]);
     }
     cprintf("\n");
+  }
+}
+
+
+/**
+ *    
+ * int inuse;        // whether this slot of the process table is in use (1 or 0)
+ * int tickets;      // the number of tickets this process has
+ * int pid;          // the PID of each process
+ * int ticks;        // the number of ticks each process has accumulated
+ * char name[16];    // process name
+ * char state;   
+ * 
+ */
+
+void getpinfo(pstatTable* pstat) {
+  struct proc* p;
+  int i = 0;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; ++p, ++i) {
+    //pstat points to a pstatTable object and p is a pointer to a proc struct. 
+    (*pstat)[i].inuse = 1;
+    (*pstat)[i].tickets = p->tickets;
+    (*pstat)[i].pid = p->pid;
+    (*pstat)[i].ticks = p->ticks;
+    (*pstat)[i].name[16] = p->name[16];
+    (*pstat)[i].state = p->state;
   }
 }
