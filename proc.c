@@ -143,14 +143,14 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
-  p->ticks = 0;
-  p->tickets = 10;
-
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
   // writes to be visible, and the lock is also needed
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
+
+  p->ticks = 0;
+  p->tickets = 10;
 
   p->state = RUNNABLE;
 
@@ -191,9 +191,6 @@ fork(void)
   // Allocate process.s
   if((np = allocproc()) == 0){
     return -1;
-
-  np->ticks = 0;
-  np->tickets = (curproc->tickets > 10) ? curproc->tickets : 10;
   }
 
   // Copy process state from proc.
@@ -221,6 +218,8 @@ fork(void)
 
   acquire(&ptable.lock);
 
+  np->ticks = 0;
+  np->tickets = (np->parent->tickets > 10) ? np->parent->tickets : 10;
   np->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -558,11 +557,15 @@ void getpinfo(pstatTable* pstat) {
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; ++p, ++i) {
     //pstat points to a pstatTable object and p is a pointer to a proc struct. 
-    (*pstat)[i].inuse = 1;
+    (*pstat)[i].inuse = (p->state != UNUSED);  // TODO: might need to update
     (*pstat)[i].tickets = p->tickets;
     (*pstat)[i].pid = p->pid;
     (*pstat)[i].ticks = p->ticks;
-    (*pstat)[i].name[16] = p->name[16];
-    (*pstat)[i].state = p->state;
+    strncpy((*pstat)[i].name, p->name, 16);
+    if (p->state == EMBRYO) (*pstat)[i].state = 'E';
+    if (p->state == RUNNING) (*pstat)[i].state = 'R';
+    if (p->state == RUNNABLE) (*pstat)[i].state = 'A';
+    if (p->state == SLEEPING) (*pstat)[i].state = 'S';
+    if (p->state == ZOMBIE) (*pstat)[i].state = 'Z';
   }
 }

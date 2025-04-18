@@ -8,7 +8,7 @@
 #include "proc.h"
 #include "pstat.h" 
 
-extern void fillpstat(pstatTable *);
+extern int sys_getpinfo(void);
 
 int
 sys_fork(void)
@@ -93,11 +93,11 @@ sys_uptime(void)
   return xticks;
 }
 
-int sys_getpinfo(void) { 
+int sys_getpinfo(void) {   // TODO: HOPEFULLY RIGHT
 
-  pstat_t* pTable;
-  if(argptr(0, (void*) &pTable, sizeof(*pTable)))
+  pstatTable* pTable;
+  if(argptr(0, (void*) &pTable, sizeof(*pTable)) < 0)
     return -1;
-  getpinfo(argptr);
+  getpinfo(pTable);
   return 0;
 }
