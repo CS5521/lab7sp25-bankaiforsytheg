@@ -94,7 +94,7 @@ sys_uptime(void)
   return xticks;
 }
 
-int sys_getpinfo(void) {   // TODO: HOPEFULLY RIGHT
+int sys_getpinfo(void) {  
 
   pstatTable* pTable;
   if(argptr(0, (void*) &pTable, sizeof(*pTable)) < 0)

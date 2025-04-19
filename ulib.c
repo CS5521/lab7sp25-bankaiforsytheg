@@ -110,8 +110,6 @@ void ps(void) {
   pstatTable pstat;
   getpinfo(&pstat);
 
-  // Print the information TODOWHAT
-
   printf(1, "PID\tTKTS\tTCKS\tSTAT\tNAME\n");
 
   int i = 0;

@@ -317,6 +317,13 @@ wait(void)
   }
 }
 
+#define RAND_MAX ((1U << 31) - 1)
+static int rseed = 1898888478;
+int random()
+{
+   return rseed = (rseed * 1103515245 + 12345) & RAND_MAX;
+}
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -325,6 +332,7 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+//  Curr: Lottery Scheduler
 void
 scheduler(void)
 {
@@ -338,24 +346,43 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+    int totalTickets = 0;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; ++p) {
+      if (p->state == RUNNABLE) totalTickets += p->tickets;
     }
+
+    if (totalTickets > 0) {
+      int winner = random() % totalTickets;
+      int ticketCounter = 0;
+
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        if(p->state != RUNNABLE)
+          continue;
+
+        ticketCounter += p->tickets;
+
+        if (ticketCounter > winner) {
+          // Switch to chosen process.  It is the process's job
+          // to release ptable.lock and then reacquire it
+          // before jumping back to us.
+          c->proc = p;
+          switchuvm(p);
+          p->state = RUNNING;
+          p->ticks++;
+
+          swtch(&(c->scheduler), p->context);
+          switchkvm();
+
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
+          break;
+        }
+      }
+    }
+
     release(&ptable.lock);
 
   }
@@ -557,7 +584,7 @@ void getpinfo(pstatTable* pstat) {
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; ++p, ++i) {
     //pstat points to a pstatTable object and p is a pointer to a proc struct. 
-    (*pstat)[i].inuse = (p->state != UNUSED);  // TODO: might need to update
+    (*pstat)[i].inuse = (p->state != UNUSED);  
     (*pstat)[i].tickets = p->tickets;
     (*pstat)[i].pid = p->pid;
     (*pstat)[i].ticks = p->ticks;
@@ -570,6 +597,10 @@ void getpinfo(pstatTable* pstat) {
   }
 }
 
+/**
+ * If number is less than 10 (fail), return -1
+ * Else set process's ticket to number and return 0
+ */
 int settickets(int number) {
   if (number < 10) return -1;
   struct proc* p = myproc();

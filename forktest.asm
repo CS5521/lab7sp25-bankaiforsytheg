@@ -521,8 +521,6 @@ void ps(void) {
  387:	89 04 24             	mov    %eax,(%esp)
  38a:	e8 b2 01 00 00       	call   541 <getpinfo>
 
-  // Print the information TODOWHAT
-
   printf(1, "PID\tTKTS\tTCKS\tSTAT\tNAME\n");
  38f:	c7 44 24 04 b4 05 00 	movl   $0x5b4,0x4(%esp)
  396:	00 
