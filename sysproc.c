@@ -9,6 +9,7 @@
 #include "pstat.h" 
 
 extern int sys_getpinfo(void);
+extern int sys_settickets(void);
 
 int
 sys_fork(void)
@@ -99,5 +100,13 @@ int sys_getpinfo(void) {   // TODO: HOPEFULLY RIGHT
   if(argptr(0, (void*) &pTable, sizeof(*pTable)) < 0)
     return -1;
   getpinfo(pTable);
+  return 0;
+}
+
+int sys_settickets(void) {
+  int n;
+  if(argint(0, &n) < 0)
+    return -1;
+  settickets(n);
   return 0;
 }

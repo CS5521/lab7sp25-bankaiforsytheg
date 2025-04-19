@@ -569,3 +569,10 @@ void getpinfo(pstatTable* pstat) {
     if (p->state == ZOMBIE) (*pstat)[i].state = 'Z';
   }
 }
+
+int settickets(int number) {
+  if (number < 10) return -1;
+  struct proc* p = myproc();
+  p->tickets = number; 
+  return 0;
+}

@@ -39,3 +39,4 @@ void free(void*);
 int atoi(const char*);
 //TODO: maybe add ps heere?
 void ps(void);
+int settickets(int);
